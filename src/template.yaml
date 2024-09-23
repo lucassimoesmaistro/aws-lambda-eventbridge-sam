@@ -1,0 +1,28 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Projeto SAM para gerar arquivos de resumo a partir de uma tabela DynamoDB
+
+Resources:
+  SummaryFileFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.10
+      Policies:
+        - DynamoDBFullAccessPolicy
+        - S3WritePolicy:
+            BucketName: summary-files-dev
+      Environment:
+        TABLE_NAME: NamePerCity
+        BUCKET_NAME: summary-files-dev
+      Events:
+        MyEvent:
+          Type: Schedule
+          Properties:
+            Schedule: rate(1 minute)
+
+Outputs:
+  SummaryFileFunctionArn:
+    Value: !GetAtt SummaryFileFunction.Arn
+    Export:
+      Name: SummaryFileFunctionArn
