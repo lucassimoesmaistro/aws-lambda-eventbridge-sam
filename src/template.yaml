@@ -1,28 +1,72 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: Projeto SAM para gerar arquivos de resumo a partir de uma tabela DynamoDB
 
 Resources:
   SummaryFileFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: app.lambda_handler
+      Handler: summary_file.app.lambda_handler
       Runtime: python3.10
-      Policies:
-        - DynamoDBFullAccessPolicy
-        - S3WritePolicy:
-            BucketName: summary-files-dev
-      Environment:
-        TABLE_NAME: NamePerCity
-        BUCKET_NAME: summary-files-dev
+      Role: !GetAtt LambdaExecutionRole.Arn
       Events:
-        MyEvent:
+        ScheduledEvent:
           Type: Schedule
           Properties:
             Schedule: rate(1 minute)
+      Environment:
+        Variables:
+          S3_BUCKET: summary-files-dev
+          DYNAMODB_TABLE: NamePerCity
+
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: LambdaExecutionPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: arn:aws:logs:*:*:*
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:Scan
+                Resource: arn:aws:dynamodb:eu-central-1:541128407328:table/NamePerCity
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                Resource: arn:aws:s3:::summary-files-dev/*
+
+  EventBridgeRule:
+    Type: AWS::Events::Rule
+    Properties: 
+      ScheduleExpression: rate(1 minute)
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt SummaryFileFunction.Arn
+          Id: "SummaryFileFunctionTarget"
+
+  SummaryFileFunctionScheduledEventPermission2:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt SummaryFileFunction.Arn
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt EventBridgeRule.Arn
 
 Outputs:
   SummaryFileFunctionArn:
+    Description: "ARN da função Lambda"
     Value: !GetAtt SummaryFileFunction.Arn
-    Export:
-      Name: SummaryFileFunctionArn
