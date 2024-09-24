@@ -7,8 +7,8 @@ dynamodb = boto3.resource('dynamodb')
 s3 = boto3.client('s3')
 
 def lambda_handler(event, context):
-    table_name = os.environ['TABLE_NAME']
-    bucket_name = os.environ['BUCKET_NAME']
+    table_name = os.environ['DYNAMODB_TABLE']
+    bucket_name = os.environ['S3_BUCKET']
     
     table = dynamodb.Table(table_name)
     response = table.scan()
