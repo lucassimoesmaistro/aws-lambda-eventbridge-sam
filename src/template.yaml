@@ -12,7 +12,7 @@ Resources:
         ScheduledEvent:
           Type: Schedule
           Properties:
-            Schedule: rate(1 minute)
+            Schedule: rate(1 week)
       Environment:
         Variables:
           S3_BUCKET: summary-files-dev
