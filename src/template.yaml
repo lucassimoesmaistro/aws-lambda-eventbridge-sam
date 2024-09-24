@@ -49,23 +49,6 @@ Resources:
                   - s3:PutObject
                 Resource: arn:aws:s3:::summary-files-dev/*
 
-  EventBridgeRule:
-    Type: AWS::Events::Rule
-    Properties: 
-      ScheduleExpression: rate(1 minute)
-      State: ENABLED
-      Targets:
-        - Arn: !GetAtt SummaryFileFunction.Arn
-          Id: "SummaryFileFunctionTarget"
-
-  SummaryFileFunctionScheduledEventPermission2:
-    Type: AWS::Lambda::Permission
-    Properties:
-      Action: lambda:InvokeFunction
-      FunctionName: !GetAtt SummaryFileFunction.Arn
-      Principal: events.amazonaws.com
-      SourceArn: !GetAtt EventBridgeRule.Arn
-
 Outputs:
   SummaryFileFunctionArn:
     Description: "ARN da função Lambda"
